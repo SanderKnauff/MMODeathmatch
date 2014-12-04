@@ -1,3 +1,7 @@
+#Build and dist files
+build/
+dist/
+
 # Compiled source #
 ###################
 *.com
