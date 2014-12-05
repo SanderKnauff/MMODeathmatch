@@ -40,8 +40,6 @@ public class Deathmatch extends Mission {
 
     private final Material missionIcon = Material.IRON_SWORD;
 
-    private final List<Player> inGamePlayers = new ArrayList<>();
-
     private int outlawDeaths, sheriffDeaths;
     private int outlawEnd, sheriffEnd;
 
@@ -57,13 +55,13 @@ public class Deathmatch extends Mission {
 
     @Override
     public void tick(int i) {
-        super.timer = this.levelTimeing;
-        super.tick(i);
-        calculateRequiredKills();
         if (i == 1) {
             if (!inGame && !inLobby) {
                 inLobby = true;
             }
+            super.timer = this.levelTimeing;
+            super.tick(i);
+            calculateRequiredKills();
             updateScoreboard();
             doLobbyCheck();
             //Run het spel
@@ -115,23 +113,11 @@ public class Deathmatch extends Mission {
     public void joinPlayer(PlayerStats pls) {
         super.joinPlayer(pls);
         Player player = pls.getPlayer();
-        pls.isInMission = true;
-        inGamePlayers.add(player);
-        MKTEventHandler.cleanupPlayerInventory(player);
-        player.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Direction", null, null));
-        if (pls.isOutlaw) {
-            teamA.add(player);
-            sendMessage(true, pls.pl.playerName + Lang.JOIN_OUTLAW);
-        } else {
-            teamB.add(player);
-            sendMessage(false, pls.pl.playerName + Lang.JOIN_SHERIFF);
-        }
-        super.showMissionPeople();
     }
 
     @EventHandler
     public void onPlayerDisconnect(PlayerQuitEvent e) {
-        if (inGamePlayers.contains(e.getPlayer())) {
+        if (super.getAllPlayers().contains(e.getPlayer())) {
             leavePlayer(PlayerStats.getPlayerStats(e.getPlayer()));
             checkEnd();
         }
@@ -171,24 +157,21 @@ public class Deathmatch extends Mission {
         super.leavePlayer(pls);
         Player player = pls.getPlayer();
         pls.isInMission = false;
-        inGamePlayers.remove(player);
+        super.getAllPlayers().remove(player);
         MKTEventHandler.cleanupPlayerInventory(player);
         player.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Direction", null, null));
         if (pls.isOutlaw) {
             teamA.remove(player);
-            if(teamA.isEmpty())
+            if (teamA.isEmpty()) {
                 stop();
+            }
         } else {
             teamB.remove(player);
-            if(teamB.isEmpty())
+            if (teamB.isEmpty()) {
                 stop();
+            }
         }
         super.showPeople(player);
-    }
-
-    @Override
-    public List<Player> getAllPlayers() {
-        return this.inGamePlayers;
     }
 
     @Override
@@ -239,7 +222,7 @@ public class Deathmatch extends Mission {
             for (Player p : teamB) {
                 this.reward(p, 1024);
             }
-            stop();          
+            stop();
         } else if (teamA.size() < minPlayers || teamB.size() < minPlayers) {
             secondRemain = 0;
             teamToSmall = true;
@@ -275,7 +258,7 @@ public class Deathmatch extends Mission {
     }
 
     private void updateScoreboard() {
-        for (Player pl : this.inGamePlayers) {
+        for (Player pl : super.getAllPlayers()) {
             PlayerStats pls = PlayerStats.getPlayerStats(pl);
             ArrayList<String> score = new ArrayList<>();
             score.add(ChatColor.GOLD.toString() + ChatColor.BOLD + "Mission");
