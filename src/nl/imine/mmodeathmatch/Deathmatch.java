@@ -25,6 +25,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -76,27 +77,27 @@ public class Deathmatch extends Mission {
                     popo.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
                 }
                 /*for (Player tempOutlaw : teamA) {
-                    Player closest = null;
-                    for (Player tempSheriff : teamB) {
-                        if (closest == null) {
-                            closest = tempSheriff;
-                        }
-                        if (tempOutlaw.getLocation().distance(closest.getLocation()) < tempOutlaw.getLocation().distance(tempSheriff.getLocation())) {
-                            tempOutlaw.setCompassTarget(closest.getLocation());
-                        }
-                    }
-                }
-                for (Player tempSheriff : teamB) {
-                    Player closest = null;
-                    for (Player tempOutlaw : teamA) {
-                        if (closest == null) {
-                            closest = tempOutlaw;
-                        }
-                        if (tempSheriff.getLocation().distance(closest.getLocation()) < tempSheriff.getLocation().distance(tempOutlaw.getLocation())) {
-                            tempSheriff.setCompassTarget(closest.getLocation());
-                        }
-                    }
-                }*/
+                 Player closest = null;
+                 for (Player tempSheriff : teamB) {
+                 if (closest == null) {
+                 closest = tempSheriff;
+                 }
+                 if (tempOutlaw.getLocation().distance(closest.getLocation()) < tempOutlaw.getLocation().distance(tempSheriff.getLocation())) {
+                 tempOutlaw.setCompassTarget(closest.getLocation());
+                 }
+                 }
+                 }
+                 for (Player tempSheriff : teamB) {
+                 Player closest = null;
+                 for (Player tempOutlaw : teamA) {
+                 if (closest == null) {
+                 closest = tempOutlaw;
+                 }
+                 if (tempSheriff.getLocation().distance(closest.getLocation()) < tempSheriff.getLocation().distance(tempOutlaw.getLocation())) {
+                 tempSheriff.setCompassTarget(closest.getLocation());
+                 }
+                 }
+                 }*/
                 if (secondRemain <= -1) {
                     stop();
                 }
@@ -132,11 +133,18 @@ public class Deathmatch extends Mission {
     public void onPlayerDisconnect(PlayerQuitEvent e) {
         if (inGamePlayers.contains(e.getPlayer())) {
             leavePlayer(PlayerStats.getPlayerStats(e.getPlayer()));
+            checkEnd();
         }
     }
 
     @Override
+    public void onHurt(EntityDamageEvent e, Entity cause) {
+        super.onHurt(e, cause);
+    }
+
+    @Override
     public void onDeath(Player pl, Entity damager) {
+        super.onDeath(pl, damager);
         if (teamA.contains(pl)) {
             outlawDeaths++;
             checkEnd();
@@ -153,6 +161,9 @@ public class Deathmatch extends Mission {
         } else {
             sendMessage(null, pl.getName() + " killed in action");
         }
+        System.out.println(String.format("Outlaws: %d", sheriffDeaths));
+        System.out.println(String.format("Sheriff: %d", outlawDeaths));
+
     }
 
     @Override
@@ -165,8 +176,12 @@ public class Deathmatch extends Mission {
         player.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Direction", null, null));
         if (pls.isOutlaw) {
             teamA.remove(player);
+            if(teamA.isEmpty())
+                stop();
         } else {
             teamB.remove(player);
+            if(teamB.isEmpty())
+                stop();
         }
         super.showPeople(player);
     }
@@ -217,12 +232,14 @@ public class Deathmatch extends Mission {
             for (Player p : teamA) {
                 this.reward(p, 1024);
             }
+            stop();
         } else if (outlawDeaths >= END_KILLS) {
             secondRemain = 0;
             sheriffWin = true;
             for (Player p : teamB) {
                 this.reward(p, 1024);
             }
+            stop();          
         } else if (teamA.size() < minPlayers || teamB.size() < minPlayers) {
             secondRemain = 0;
             teamToSmall = true;
