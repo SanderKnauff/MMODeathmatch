@@ -5,8 +5,6 @@
  */
 package nl.imine.mmodeathmatch;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.imine.mmodeathmatch.util.Lang;
 import nl.imine.mmodeathmatch.util.MissionState;
 import nl.makertim.MMOmain.MKTEventHandler;
@@ -15,7 +13,6 @@ import nl.makertim.MMOmain.Refrence;
 import nl.makertim.MMOmain.lib.MMOOutlaws;
 import nl.makertim.MMOmain.lib.Mission;
 import nl.makertim.MMOmain.lib.MissionLocation;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
@@ -24,6 +21,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -59,7 +57,7 @@ public class Deathmatch extends Mission {
             if (!inGame && !inLobby) {
                 inLobby = true;
             }
-            super.timer = this.levelTimeing;
+            super.timer = (isLobby ? levelTimeing : secondRemain);
             super.tick(i);
             calculateRequiredKills();
             updateScoreboard();
@@ -74,28 +72,6 @@ public class Deathmatch extends Mission {
                     sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
                     sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
                 }
-                /*for (Player tempOutlaw : teamA) {
-                 Player closest = null;
-                 for (Player tempSheriff : teamB) {
-                 if (closest == null) {
-                 closest = tempSheriff;
-                 }
-                 if (tempOutlaw.getLocation().distance(closest.getLocation()) < tempOutlaw.getLocation().distance(tempSheriff.getLocation())) {
-                 tempOutlaw.setCompassTarget(closest.getLocation());
-                 }
-                 }
-                 }
-                 for (Player tempSheriff : teamB) {
-                 Player closest = null;
-                 for (Player tempOutlaw : teamA) {
-                 if (closest == null) {
-                 closest = tempOutlaw;
-                 }
-                 if (tempSheriff.getLocation().distance(closest.getLocation()) < tempSheriff.getLocation().distance(tempOutlaw.getLocation())) {
-                 tempSheriff.setCompassTarget(closest.getLocation());
-                 }
-                 }
-                 }*/
                 if (secondRemain <= -1) {
                     stop();
                 }
@@ -138,18 +114,11 @@ public class Deathmatch extends Mission {
             sheriffDeaths++;
             checkEnd();
         }
-        this.scoreAdd.clear();
-        this.scoreAdd.add(String.format("Outlaws: %d", sheriffDeaths));
-        this.scoreAdd.add(String.format("Sheriffs: %d", outlawDeaths));
         if (damager instanceof Player) {
-            sendMessage(null, pl.getName() + " killed by " + ((Player) damager).getName());
             this.reward((Player) damager, 64);
-        } else {
-            sendMessage(null, pl.getName() + " killed in action");
+        } else if(damager instanceof Projectile && ((((Projectile)damager)).getShooter()) instanceof Player){
+                this.reward(((Player)((Projectile)damager).getShooter()), 64);
         }
-        System.out.println(String.format("Outlaws: %d", sheriffDeaths));
-        System.out.println(String.format("Sheriff: %d", outlawDeaths));
-
     }
 
     @Override
@@ -257,37 +226,12 @@ public class Deathmatch extends Mission {
         sheriffEnd = teamB.size() * 10;
     }
 
-    private void updateScoreboard() {
-        for (Player pl : super.getAllPlayers()) {
-            PlayerStats pls = PlayerStats.getPlayerStats(pl);
-            ArrayList<String> score = new ArrayList<>();
-            score.add(ChatColor.GOLD.toString() + ChatColor.BOLD + "Mission");
-            score.add(this.getName());
-            score.add("");
-            score.add(ChatColor.RED.toString() + ChatColor.BOLD + "Outlaws");
-            for (Player outlaw : teamA) {
-                score.add(outlaw.getName());
-            }
-            for (int j = 0; j < minPlayers - teamA.size(); j++) {
-                score.add("Empty" + StringUtils.repeat(" ", j));
-            }
-            score.add(" ");
-            score.add(ChatColor.BLUE.toString() + ChatColor.BOLD + "Sherrifs");
-            for (Player popo : teamB) {
-                score.add(popo.getName());
-            }
-            if (inLobby) {
-                score.add("  ");
-                score.add(ChatColor.GREEN.toString() + ChatColor.BOLD + "Time ");
-                score.add(Integer.toString(levelTimeing));
-            } else if (inGame) {
-                score.add("   ");
-                score.add(ChatColor.GREEN.toString() + ChatColor.BOLD + "Time ");
-                score.add(Integer.toString(secondRemain));
-            }
-        }
+    private void updateScoreboard(){
+        this.scoreAdd.clear();
+        this.scoreAdd.add(String.format("Outlaws: %d", sheriffDeaths));
+        this.scoreAdd.add(String.format("Sheriffs: %d", outlawDeaths));
+        
     }
-
     private void doLobbyCheck() {
         if (inLobby) {
             //TP terug naar lobby
