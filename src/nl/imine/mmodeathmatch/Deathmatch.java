@@ -72,9 +72,9 @@ public class Deathmatch extends Mission {
                     outlaw.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, sheriffDeaths, "Sheriffs Silenced", null, null));
                     outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
                 }
-                for (Player popo : teamB) {
-                    popo.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
-                    popo.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
+                for (Player sheriff : teamB) {
+                    sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
+                    sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
                 }
                 /*for (Player tempOutlaw : teamA) {
                  Player closest = null;
@@ -226,14 +226,14 @@ public class Deathmatch extends Mission {
 
     private void checkEnd() {
         boolean outlawWin = false, teamToSmall = false, sheriffWin = false;
-        if (sheriffDeaths >= END_KILLS) {
+        if (sheriffDeaths >= outlawEnd) {
             secondRemain = 0;
             outlawWin = true;
             for (Player p : teamA) {
                 this.reward(p, 1024);
             }
             stop();
-        } else if (outlawDeaths >= END_KILLS) {
+        } else if (outlawDeaths >= sheriffEnd) {
             secondRemain = 0;
             sheriffWin = true;
             for (Player p : teamB) {
@@ -257,26 +257,6 @@ public class Deathmatch extends Mission {
                 }
                 stop();
             }
-        }
-    }
-
-    private void checkWin() {
-        if (outlawDeaths >= END_KILLS) {
-            for (Player p : teamA) {
-                this.reward(p, 1024);
-            }
-            for (Player p : teamB) {
-                this.reward(p, 512);
-            }
-            this.stop();
-        } else if (sheriffDeaths >= END_KILLS) {
-            for (Player p : teamB) {
-                this.reward(p, 1024);
-            }
-            for (Player p : teamA) {
-                this.reward(p, 512);
-            }
-            this.stop();
         }
     }
 
