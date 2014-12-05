@@ -72,7 +72,7 @@ public class Deathmatch extends Mission {
                     sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
                     sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
                 }
-                if (secondRemain <= -1) {
+                if (secondRemain-- <= -1) {
                     stop();
                 }
                 cooldown = false;
@@ -196,7 +196,7 @@ public class Deathmatch extends Mission {
             secondRemain = 0;
             teamToSmall = true;
         }
-        if (secondRemain-- <= 0) {  //MAKERTIM WHY
+        if (secondRemain <= 0) {  //MAKERTIM WHY
             if (teamToSmall) {
                 sendTitle(true, "Mission disturbed", null);
                 sendTitle(false, "Mission disturbed", null);
