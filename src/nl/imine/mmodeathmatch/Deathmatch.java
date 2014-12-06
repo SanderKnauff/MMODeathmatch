@@ -41,7 +41,7 @@ public class Deathmatch extends Mission {
     private int outlawDeaths, sheriffDeaths;
     private int outlawEnd, sheriffEnd;
 
-    private int levelTimeing = 30, secondRemain = 360;
+    private int levelTiming = 30, secondRemain = 600;
 
     private boolean joinable, inLobby, cooldown;
     public short gameStage;
@@ -57,26 +57,13 @@ public class Deathmatch extends Mission {
             if (!inGame && !inLobby) {
                 inLobby = true;
             }
-            super.timer = (isLobby ? levelTimeing : secondRemain);
+            super.timer = (isLobby ? levelTiming : secondRemain);
             super.tick(i);
+            
             calculateRequiredKills();
             updateScoreboard();
             doLobbyCheck();
-            //Run het spel
-            if (inGame) {
-                for (Player outlaw : teamA) {
-                    outlaw.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, sheriffDeaths, "Sheriffs Silenced", null, null));
-                    outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
-                }
-                for (Player sheriff : teamB) {
-                    sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
-                    sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
-                }
-                if (secondRemain-- <= -1) {
-                    stop();
-                }
-                cooldown = false;
-            }
+            doIngameCheck();
         }
     }
 
@@ -100,8 +87,9 @@ public class Deathmatch extends Mission {
     }
 
     @Override
-    public void onHurt(EntityDamageEvent e, Entity cause) {
-        super.onHurt(e, cause);
+    public void onHurt(EntityDamageEvent evt, Entity cause) {
+        super.onHurt(evt, cause);
+        if(evt.isCancelled()) return;
     }
 
     @Override
@@ -116,8 +104,8 @@ public class Deathmatch extends Mission {
         }
         if (damager instanceof Player) {
             this.reward((Player) damager, 64);
-        } else if(damager instanceof Projectile && ((((Projectile)damager)).getShooter()) instanceof Player){
-                this.reward(((Player)((Projectile)damager).getShooter()), 64);
+        } else if (damager instanceof Projectile && ((((Projectile) damager)).getShooter()) instanceof Player) {
+            this.reward(((Player) ((Projectile) damager).getShooter()), 64);
         }
     }
 
@@ -201,11 +189,11 @@ public class Deathmatch extends Mission {
                 sendTitle(true, "Mission disturbed", null);
                 sendTitle(false, "Mission disturbed", null);
                 if (outlawWin) {
-                    sendMessage(true, "Mission completed: The sheriffs are either dead or running");
-                    sendMessage(false, "Mission failed: The outlaw have outnumberd you");
+                    sendTitle(true, "Mission Accomplished", "The sheriffs are either dead or running");
+                    sendTitle(false, "Mission Failed", "The outlaw have outnumberd you");
                 } else if (sheriffWin) {
-                    sendMessage(true, "Mission completed: The outlaws are in cutody now");
-                    sendMessage(false, "Mission failed: The your friends are dead or in prison now");
+                    sendTitle(false, "Mission Accomplished", "The outlaws are in cutody now");
+                    sendTitle(true, "Mission Failed", "The your friends are dead or in prison now");
                 }
                 stop();
             }
@@ -215,8 +203,8 @@ public class Deathmatch extends Mission {
     @Override
     public void stop() {
         super.stop();
-        secondRemain = 240;
-        levelTimeing = 30;
+        secondRemain = 600;
+        levelTiming = 30;
         outlawDeaths = 0;
         sheriffDeaths = 0;
     }
@@ -226,12 +214,13 @@ public class Deathmatch extends Mission {
         sheriffEnd = teamB.size() * 10;
     }
 
-    private void updateScoreboard(){
+    private void updateScoreboard() {
         this.scoreAdd.clear();
         this.scoreAdd.add(String.format("Outlaws: %d", sheriffDeaths));
         this.scoreAdd.add(String.format("Sheriffs: %d", outlawDeaths));
-        
+
     }
+
     private void doLobbyCheck() {
         if (inLobby) {
             //TP terug naar lobby
@@ -255,14 +244,31 @@ public class Deathmatch extends Mission {
                     popo.getInventory().setItem(8, Refrence.slot8i);
                 }
             }
-            if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTimeing-- <= 0) {
+            if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTiming-- <= 0) {
                 //Spel begint
                 inGame = true;
                 inLobby = false;
                 state = 0;
-                levelTimeing = 0;
+                levelTiming = 0;
                 super.timer = secondRemain;
             }
+        }
+    }
+
+    private void doIngameCheck() {
+        if (inGame) {
+            for (Player outlaw : teamA) {
+                outlaw.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, sheriffDeaths, "Sheriffs Silenced", null, null));
+                outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
+            }
+            for (Player sheriff : teamB) {
+                sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
+                sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
+            }
+            if (secondRemain-- <= -1) {
+                stop();
+            }
+            cooldown = false;
         }
     }
 }
