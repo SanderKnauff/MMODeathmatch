@@ -47,17 +47,16 @@ public class Deathmatch extends Mission {
     public short gameStage;
 
     public Deathmatch() {
-        this.scoreAdd.add(String.format("Outlaws: %d", sheriffDeaths));
-        this.scoreAdd.add(String.format("Sheriffs: %d", outlawDeaths));
+        super.isLobby = true;
     }
 
     @Override
     public void tick(int i) {
         if (i == 1) {
+            super.timer = (isLobby ? levelTiming : secondRemain);
             if (!inGame && !inLobby) {
                 inLobby = true;
             }
-            super.timer = (isLobby ? levelTiming : secondRemain);
             super.tick(i);
             
             calculateRequiredKills();
@@ -149,7 +148,7 @@ public class Deathmatch extends Mission {
 
     @Override
     public String getName() {
-        return Lang.MISSION_NAME;
+        return Lang.MISSION_ID;
     }
 
     public void sendMessage(boolean outlaws, String message) {
@@ -172,6 +171,8 @@ public class Deathmatch extends Mission {
             for (Player p : teamA) {
                 this.reward(p, 1024);
             }
+            sendTitle(true, Lang.MISSION_WIN, "The sheriffs are either dead or running");
+            sendTitle(false, Lang.MISSION_FAIL, "The outlaw have outnumberd you");
             stop();
         } else if (outlawDeaths >= sheriffEnd) {
             secondRemain = 0;
@@ -179,6 +180,8 @@ public class Deathmatch extends Mission {
             for (Player p : teamB) {
                 this.reward(p, 1024);
             }
+            sendTitle(false, Lang.MISSION_WIN, "The outlaws are in custody");
+            sendTitle(true, Lang.MISSION_FAIL, "Your friends are dead or in prison now");
             stop();
         } else if (teamA.size() < minPlayers || teamB.size() < minPlayers) {
             secondRemain = 0;
@@ -186,14 +189,15 @@ public class Deathmatch extends Mission {
         }
         if (secondRemain <= 0) {  //MAKERTIM WHY
             if (teamToSmall) {
-                sendTitle(true, "Mission disturbed", null);
-                sendTitle(false, "Mission disturbed", null);
+                sendTitle(null, Lang.MISSION_DRAW, null);
                 if (outlawWin) {
-                    sendTitle(true, "Mission Accomplished", "The sheriffs are either dead or running");
-                    sendTitle(false, "Mission Failed", "The outlaw have outnumberd you");
+                    sendTitle(true, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+                    sendTitle(false, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
                 } else if (sheriffWin) {
-                    sendTitle(false, "Mission Accomplished", "The outlaws are in cutody now");
-                    sendTitle(true, "Mission Failed", "The your friends are dead or in prison now");
+                    sendTitle(false, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+                    sendTitle(true, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+                } else {
+                    sendTitle(null, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
                 }
                 stop();
             }
@@ -203,6 +207,7 @@ public class Deathmatch extends Mission {
     @Override
     public void stop() {
         super.stop();
+        isLobby = true;
         secondRemain = 600;
         levelTiming = 30;
         outlawDeaths = 0;
@@ -215,10 +220,8 @@ public class Deathmatch extends Mission {
     }
 
     private void updateScoreboard() {
-        this.scoreAdd.clear();
-        this.scoreAdd.add(String.format("Outlaws: %d", sheriffDeaths));
-        this.scoreAdd.add(String.format("Sheriffs: %d", outlawDeaths));
-
+        super.outlawsSuffix = String.format(": %d", sheriffDeaths);
+        super.sheriffSuffix = String.format(": %d", outlawDeaths);
     }
 
     private void doLobbyCheck() {
@@ -247,10 +250,20 @@ public class Deathmatch extends Mission {
             if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTiming-- <= 0) {
                 //Spel begint
                 inGame = true;
+                super.isLobby = false;
                 inLobby = false;
                 state = 0;
                 levelTiming = 0;
-                super.timer = secondRemain;
+                sendTitle(false, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
+                sendTitle(true, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
+                //super.timer = secondRemain;
+            }
+            switch(levelTiming){
+                case 25: case 20: case 15: case 10: case 5: case 4: case 3: case 2: case 1:
+                    sendTitle(false, String.format("%d", levelTiming), null);
+                    sendTitle(true, String.format("%d", levelTiming), null);
+                    break;
+                
             }
         }
     }
