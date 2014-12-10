@@ -32,4 +32,5 @@ public class Lang {
     
     public static final String LEAVE_SHERIFF = "joined the Sheriffs";
     public static final String LEAVE_OUTLAW = "joined the Outlaws";
+    
 }
