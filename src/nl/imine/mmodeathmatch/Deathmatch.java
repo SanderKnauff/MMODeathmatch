@@ -6,7 +6,6 @@
 package nl.imine.mmodeathmatch;
 
 import nl.imine.mmodeathmatch.util.Lang;
-import nl.imine.mmodeathmatch.util.MissionState;
 import nl.makertim.MMOmain.MKTEventHandler;
 import nl.makertim.MMOmain.PlayerStats;
 import nl.makertim.MMOmain.Refrence;
@@ -14,7 +13,6 @@ import nl.makertim.MMOmain.lib.MMOOutlaws;
 import nl.makertim.MMOmain.lib.Mission;
 import nl.makertim.MMOmain.lib.MissionLocation;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -89,7 +87,6 @@ public class Deathmatch extends Mission {
     public void onHurt(EntityDamageEvent evt, Entity cause) {
         super.onHurt(evt, cause);
         if (evt.isCancelled()) {
-            return;
         }
     }
 
@@ -260,19 +257,7 @@ public class Deathmatch extends Mission {
                 sendTitle(true, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
                 //super.timer = secondRemain;
             }
-            switch (levelTiming) {
-                case 24:
-                case 19:
-                case 14:
-                case 9:
-                case 4:
-                case 3:
-                case 2:
-                case 1:
-                    sendTitle(null, String.format("%d", levelTiming+1), null);
-                    break;
-
-            }
+            super.timer(levelTiming);
         }
     }
 
