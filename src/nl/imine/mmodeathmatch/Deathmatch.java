@@ -257,7 +257,7 @@ public class Deathmatch extends Mission {
                 sendTitle(true, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
                 //super.timer = secondRemain;
             }
-            super.timer(levelTiming);
+            super.showCountDown(levelTiming);
         }
     }
 
