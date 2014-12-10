@@ -24,7 +24,7 @@ public class Lang {
     public static final String ENDMESSAGE_OUTLAW_WIN = "The sheriffs are either dead or running";
     public static final String ENDMESSAGE_OUTLAW_LOSE = "The outlaw have outnumberd you";
     public static final String ENDMESSAGE_SHERIFF_WIN = "The outlaws are in custody";
-    public static final String ENDMESSAGE_SHERIFF_LOSE = "The your friends are dead or in prison now";
+    public static final String ENDMESSAGE_SHERIFF_LOSE = "Your friends are dead or in prison now";
     public static final String ENDMESSAGE_DRAW = "Work harder next time!";
     
     public static final String JOIN_SHERIFF = "joined the Sheriffs";

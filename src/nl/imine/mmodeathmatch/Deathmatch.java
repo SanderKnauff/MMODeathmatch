@@ -68,7 +68,7 @@ public class Deathmatch extends Mission {
 
     @Override
     public boolean inLobby() {
-        return (gameStage == MissionState.IN_LOBBY);
+        return inLobby;
     }
 
     @Override
@@ -156,11 +156,11 @@ public class Deathmatch extends Mission {
     public void sendMessage(boolean outlaws, String message) {
         if (outlaws) {
             for (Player pl : this.teamA) {
-                MMOOutlaws.sendActionMessage(pl, ChatColor.GOLD + message);
+                MMOOutlaws.sendActionMessage(pl, message, "Gold");
             }
         } else {
             for (Player pl : this.teamB) {
-                MMOOutlaws.sendActionMessage(pl, ChatColor.GOLD + message);
+                MMOOutlaws.sendActionMessage(pl, message, "Gold");
             }
         }
     }
@@ -269,7 +269,6 @@ public class Deathmatch extends Mission {
                 case 3:
                 case 2:
                 case 1:
-                case 0:
                     sendTitle(null, String.format("%d", levelTiming+1), null);
                     break;
 
@@ -280,21 +279,19 @@ public class Deathmatch extends Mission {
     private void doIngameCheck() {
         if (inGame) {
             for (Player outlaw : teamA) {
-                outlaw.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, sheriffDeaths, "Sheriffs Silenced", null, null));
                 outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
             }
             for (Player sheriff : teamB) {
-                sheriff.getInventory().setItem(7, Refrence.customIS(Material.NAME_TAG, outlawDeaths, "Outlaws Incapitated", null, null));
                 sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
             }
             if (secondRemain-- <= -1) {
-                if (outlawDeaths >= sheriffDeaths) {
+                if (outlawDeaths < sheriffDeaths) {
                     for (Player p : teamA) {
                         this.reward(p, 1024);
                     }
                     sendTitle(true, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
                     sendTitle(false, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
-                } else if (sheriffDeaths >= outlawDeaths) {
+                } else if (sheriffDeaths < outlawDeaths) {
                     for (Player p : teamB) {
                         this.reward(p, 1024);
                     }
