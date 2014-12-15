@@ -6,13 +6,16 @@
 package nl.imine.mmodeathmatch;
 
 import nl.imine.mmodeathmatch.util.Lang;
-import nl.makertim.MMOmain.MKTEventHandler;
 import nl.makertim.MMOmain.PlayerStats;
 import nl.makertim.MMOmain.Refrence;
 import nl.makertim.MMOmain.lib.MMOOutlaws;
-import nl.makertim.MMOmain.lib.Mission;
 import nl.makertim.MMOmain.lib.MissionLocation;
+import nl.makertim.MMOmain.mission.MissionEventHandler;
+import nl.makertim.MMOmain.mission.MissionStage;
+import nl.makertim.MMOmain.mission.MissionTeam;
+import nl.makertim.MMOmain.mission.TeamMission;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,7 +24,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -30,7 +32,7 @@ import org.bukkit.plugin.PluginManager;
  *
  * @author Sander
  */
-public class Deathmatch extends Mission {
+public class Deathmatch extends TeamMission {
 
     private static final int END_KILLS = 50;
 
@@ -45,18 +47,23 @@ public class Deathmatch extends Mission {
     public short gameStage;
 
     public Deathmatch() {
-        super.isLobby = true;
+        this.setStage("", "", "", MissionStage.NO_STAGE);
+    }
+
+    @Override
+    protected void onStart() {
+        
+    }
+    
+    @Override
+    protected void onStop() {
+        
     }
 
     @Override
     public void tick(int i) {
         if (i == 1) {
-            super.timer = (isLobby ? levelTiming : secondRemain);
-            if (!inGame && !inLobby) {
-                inLobby = true;
-            }
-            super.tick(i);
-
+            sendDefaultScoreboard((this.getStage().equals(MissionStage.NO_STAGE) ? levelTiming : secondRemain));
             calculateRequiredKills();
             updateScoreboard();
             doLobbyCheck();
@@ -65,14 +72,8 @@ public class Deathmatch extends Mission {
     }
 
     @Override
-    public boolean inLobby() {
-        return inLobby;
-    }
-
-    @Override
-    public void joinPlayer(PlayerStats pls) {
-        super.joinPlayer(pls);
-        Player player = pls.getPlayer();
+    public MissionEventHandler onJoin(PlayerStats ps) {
+        return MissionEventHandler.NEXT_TRUE;
     }
 
     @EventHandler
@@ -84,15 +85,12 @@ public class Deathmatch extends Mission {
     }
 
     @Override
-    public void onHurt(EntityDamageEvent evt, Entity cause) {
-        super.onHurt(evt, cause);
-        if (evt.isCancelled()) {
-        }
+    public MissionEventHandler onHurt(Player p, Entity cause) {
+        return MissionEventHandler.NEXT_TRUE;
     }
 
     @Override
-    public void onDeath(Player pl, Entity damager) {
-        super.onDeath(pl, damager);
+    public MissionEventHandler onDeath(Player pl, Entity damager) {
         if (teamA.contains(pl)) {
             outlawDeaths++;
             checkEnd();
@@ -105,34 +103,26 @@ public class Deathmatch extends Mission {
         } else if (damager instanceof Projectile && ((((Projectile) damager)).getShooter()) instanceof Player) {
             this.reward(((Player) ((Projectile) damager).getShooter()), 64);
         }
+        return MissionEventHandler.NEXT_TRUE;
     }
 
     @Override
-    public void leavePlayer(PlayerStats pls) {
-        super.leavePlayer(pls);
-        Player player = pls.getPlayer();
-        pls.isInMission = false;
-        super.getAllPlayers().remove(player);
-        MKTEventHandler.cleanupPlayerInventory(player);
-        player.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Direction", null, null));
+    public void removePlayer(PlayerStats pls) {
+        super.removePlayer(pls);
         if (pls.isOutlaw) {
-            teamA.remove(player);
             if (teamA.isEmpty()) {
                 stop();
             }
         } else {
-            teamB.remove(player);
             if (teamB.isEmpty()) {
                 stop();
             }
         }
-        super.showPeople(player);
     }
 
     @Override
-    public MissionLocation getLocation(boolean isOutlaw
-    ) {
-        if (isOutlaw) {
+    public MissionLocation getLobbyLocation(PlayerStats ps) {
+        if (ps.isOutlaw) {
             return new MissionLocation(new Location(Bukkit.getWorlds().get(0), 345, 74, 39), 5);
         } else {
             return new MissionLocation(new Location(Bukkit.getWorlds().get(0), 420, 69, 37), 5);
@@ -150,18 +140,6 @@ public class Deathmatch extends Mission {
         return Lang.MISSION_ID;
     }
 
-    public void sendMessage(boolean outlaws, String message) {
-        if (outlaws) {
-            for (Player pl : this.teamA) {
-                MMOOutlaws.sendActionMessage(pl, message, "Gold");
-            }
-        } else {
-            for (Player pl : this.teamB) {
-                MMOOutlaws.sendActionMessage(pl, message, "Gold");
-            }
-        }
-    }
-
     private void checkEnd() {
         boolean outlawWin = false, teamToSmall = false, sheriffWin = false;
         if (sheriffDeaths >= outlawEnd) {
@@ -170,8 +148,8 @@ public class Deathmatch extends Mission {
             for (Player p : teamA) {
                 this.reward(p, 1024);
             }
-            sendTitle(true, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
-            sendTitle(false, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
+            sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+            sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
             stop();
         } else if (outlawDeaths >= sheriffEnd) {
             secondRemain = 0;
@@ -179,8 +157,8 @@ public class Deathmatch extends Mission {
             for (Player p : teamB) {
                 this.reward(p, 1024);
             }
-            sendTitle(false, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
-            sendTitle(true, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+            sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+            sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
             stop();
         } else if (teamA.size() < minPlayers || teamB.size() < minPlayers) {
             secondRemain = 0;
@@ -188,15 +166,15 @@ public class Deathmatch extends Mission {
         }
         if (secondRemain <= 0) {  //MAKERTIM WHY
             if (teamToSmall) {
-                sendTitle(null, Lang.MISSION_DRAW, null);
+                sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, null);
                 if (outlawWin) {
-                    sendTitle(true, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
-                    sendTitle(false, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
                 } else if (sheriffWin) {
-                    sendTitle(false, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
-                    sendTitle(true, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
                 } else {
-                    sendTitle(null, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                    sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
                 }
                 stop();
             }
@@ -206,7 +184,7 @@ public class Deathmatch extends Mission {
     @Override
     public void stop() {
         super.stop();
-        isLobby = true;
+        this.setStage(null, null, null, MissionStage.NO_STAGE);
         secondRemain = 600;
         levelTiming = 30;
         outlawDeaths = 0;
@@ -219,50 +197,47 @@ public class Deathmatch extends Mission {
     }
 
     private void updateScoreboard() {
-        super.outlawsSuffix = String.format(": %d", sheriffDeaths);
-        super.sheriffSuffix = String.format(": %d", outlawDeaths);
+        this.teamASuffix = String.format(": %d", sheriffDeaths);
+        this.teamBSuffix = String.format(": %d", outlawDeaths);
     }
 
     private void doLobbyCheck() {
         if (inLobby) {
             //TP terug naar lobby
             for (Player outlaw : teamA) {
-                if (!getLocation(true).isInsideRange(outlaw.getLocation())) {
+                if (!getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).isInsideRange(outlaw.getLocation())) {
                     for (int j = 0; j < 10; j++) {
                         outlaw.getWorld().playEffect(outlaw.getLocation(), Effect.ENDER_SIGNAL, j);
                     }
                     outlaw.playSound(outlaw.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
-                    outlaw.teleport(getLocation(true).getRandomLocation());
+                    outlaw.teleport(getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).getRandomLocation());
                     outlaw.getInventory().setItem(8, Refrence.slot8i);
                 }
             }
-            for (Player popo : teamB) {
-                if (!getLocation(false).isInsideRange(popo.getLocation())) {
+            for (Player sheriff : teamB) {
+                if (!getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).isInsideRange(sheriff.getLocation())) {
                     for (int j = 0; j < 10; j++) {
-                        popo.getWorld().playEffect(popo.getLocation(), Effect.ENDER_SIGNAL, j);
+                        sheriff.getWorld().playEffect(sheriff.getLocation(), Effect.ENDER_SIGNAL, j);
                     }
-                    popo.playSound(popo.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
-                    popo.teleport(getLocation(false).getRandomLocation());
-                    popo.getInventory().setItem(8, Refrence.slot8i);
+                    sheriff.playSound(sheriff.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
+                    sheriff.teleport(getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).getRandomLocation());
+                    sheriff.getInventory().setItem(8, Refrence.slot8i);
                 }
             }
             if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTiming-- <= 0) {
                 //Spel begint
-                inGame = true;
-                super.isLobby = false;
+                this.setStage(null, null, null, MissionStage.STAGE1);
                 inLobby = false;
-                state = 0;
                 levelTiming = 0;
-                sendTitle(false, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
-                sendTitle(true, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
-                //super.timer = secondRemain;
+                sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
+                sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
             }
             super.showCountDown(levelTiming);
         }
     }
 
     private void doIngameCheck() {
-        if (inGame) {
+        if (this.getStage().equals(MissionStage.STAGE1)) {
             for (Player outlaw : teamA) {
                 outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
             }
@@ -274,20 +249,46 @@ public class Deathmatch extends Mission {
                     for (Player p : teamA) {
                         this.reward(p, 1024);
                     }
-                    sendTitle(true, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
-                    sendTitle(false, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
                 } else if (sheriffDeaths < outlawDeaths) {
                     for (Player p : teamB) {
                         this.reward(p, 1024);
                     }
-                    sendTitle(false, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
-                    sendTitle(true, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
                 } else {
-                    sendTitle(true, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                    sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
                 }
                 stop();
             }
             cooldown = false;
+        }
+    }
+
+    @Override
+    protected MissionEventHandler allowJoin(PlayerStats ps) {
+        return MissionEventHandler.NEXT_TRUE;
+    }
+
+    public String getAuth() {
+        return "Sansko1337";
+    }
+    
+    @Override
+    public Material getIcon() {
+        return Material.STONE_SWORD;
+    }   
+    
+    private void sendMessage(boolean outlaws, String message) {
+        if (outlaws) {
+            for (Player pl : this.teamA) {
+                MMOOutlaws.sendActionMessage(pl, ChatColor.GOLD + message);
+            }
+        } else {
+            for (Player pl : this.teamB) {
+                MMOOutlaws.sendActionMessage(pl, ChatColor.GOLD + message);
+            }
         }
     }
 }
