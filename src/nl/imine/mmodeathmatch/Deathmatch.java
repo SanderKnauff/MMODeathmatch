@@ -12,6 +12,7 @@ import nl.makertim.MMOmain.lib.MMOOutlaws;
 import nl.makertim.MMOmain.lib.MissionLocation;
 import nl.makertim.MMOmain.mission.MissionEventHandler;
 import nl.makertim.MMOmain.mission.MissionStage;
+import nl.makertim.MMOmain.mission.MissionStatus;
 import nl.makertim.MMOmain.mission.MissionTeam;
 import nl.makertim.MMOmain.mission.TeamMission;
 import org.bukkit.Bukkit;
@@ -43,30 +44,33 @@ public class Deathmatch extends TeamMission {
 
     private int levelTiming = 30, secondRemain = 600;
 
-    private boolean joinable, inLobby, cooldown;
+    private boolean joinable, cooldown;
     public short gameStage;
 
     public Deathmatch() {
         this.setStage("", "", "", MissionStage.NO_STAGE);
+        this.status = MissionStatus.IN_LOBBY;
     }
 
     @Override
     protected void onStart() {
-        
+
     }
-    
+
     @Override
     protected void onStop() {
-        
+
     }
 
     @Override
     public void tick(int i) {
-        if (i == 1) {
+        if (i == 0) {
             sendDefaultScoreboard((this.getStage().equals(MissionStage.NO_STAGE) ? levelTiming : secondRemain));
+            if (status.equals(MissionStatus.IN_LOBBY)) {
+                doLobbyCheck();
+            }
             calculateRequiredKills();
             updateScoreboard();
-            doLobbyCheck();
             doIngameCheck();
         }
     }
@@ -90,7 +94,7 @@ public class Deathmatch extends TeamMission {
     }
 
     @Override
-    public MissionEventHandler onDeath(Player pl, Entity damager) {
+    public void onRespawn(Player pl) {
         if (teamA.contains(pl)) {
             outlawDeaths++;
             checkEnd();
@@ -98,12 +102,9 @@ public class Deathmatch extends TeamMission {
             sheriffDeaths++;
             checkEnd();
         }
-        if (damager instanceof Player) {
-            this.reward((Player) damager, 64);
-        } else if (damager instanceof Projectile && ((((Projectile) damager)).getShooter()) instanceof Player) {
-            this.reward(((Player) ((Projectile) damager).getShooter()), 64);
+        if (pl.getKiller() != null) {
+            this.reward(pl.getKiller(), 64);
         }
-        return MissionEventHandler.NEXT_TRUE;
     }
 
     @Override
@@ -185,6 +186,7 @@ public class Deathmatch extends TeamMission {
     public void stop() {
         super.stop();
         this.setStage(null, null, null, MissionStage.NO_STAGE);
+        this.status = MissionStatus.IN_LOBBY;
         secondRemain = 600;
         levelTiming = 30;
         outlawDeaths = 0;
@@ -202,38 +204,41 @@ public class Deathmatch extends TeamMission {
     }
 
     private void doLobbyCheck() {
-        if (inLobby) {
-            //TP terug naar lobby
-            for (Player outlaw : teamA) {
-                if (!getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).isInsideRange(outlaw.getLocation())) {
-                    for (int j = 0; j < 10; j++) {
-                        outlaw.getWorld().playEffect(outlaw.getLocation(), Effect.ENDER_SIGNAL, j);
-                    }
-                    outlaw.playSound(outlaw.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
-                    outlaw.teleport(getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).getRandomLocation());
-                    outlaw.getInventory().setItem(8, Refrence.slot8i);
+
+        //TP terug naar lobby
+        for (Player outlaw : teamA) {
+            if (!getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).isInsideRange(outlaw.getLocation())) {
+                for (int j = 0; j < 10; j++) {
+                    outlaw.getWorld().playEffect(outlaw.getLocation(), Effect.ENDER_SIGNAL, j);
                 }
+                outlaw.playSound(outlaw.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
+                outlaw.teleport(getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).getRandomLocation());
+                outlaw.getInventory().setItem(8, Refrence.IS_EMPTY);
             }
-            for (Player sheriff : teamB) {
-                if (!getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).isInsideRange(sheriff.getLocation())) {
-                    for (int j = 0; j < 10; j++) {
-                        sheriff.getWorld().playEffect(sheriff.getLocation(), Effect.ENDER_SIGNAL, j);
-                    }
-                    sheriff.playSound(sheriff.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
-                    sheriff.teleport(getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).getRandomLocation());
-                    sheriff.getInventory().setItem(8, Refrence.slot8i);
-                }
-            }
-            if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTiming-- <= 0) {
-                //Spel begint
-                this.setStage(null, null, null, MissionStage.STAGE1);
-                inLobby = false;
-                levelTiming = 0;
-                sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
-                sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
-            }
-            super.showCountDown(levelTiming);
         }
+        for (Player sheriff : teamB) {
+            if (!getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).isInsideRange(sheriff.getLocation())) {
+                for (int j = 0; j < 10; j++) {
+                    sheriff.getWorld().playEffect(sheriff.getLocation(), Effect.ENDER_SIGNAL, j);
+                }
+                sheriff.playSound(sheriff.getLocation(), Sound.ENDERMAN_TELEPORT, 1F, 1F);
+                sheriff.teleport(getLobbyLocation(PlayerStats.getPlayerStats(sheriff)).getRandomLocation());
+                sheriff.getInventory().setItem(8, Refrence.IS_EMPTY);
+            }
+        }
+        if ((teamA.size() >= minPlayers && teamB.size() >= minPlayers) && levelTiming-- <= 0) {
+            //Spel begint
+            this.setStage(null, null, null, MissionStage.STAGE1);
+            this.status = MissionStatus.IN_GAME;
+            levelTiming = 0;
+            for(Player p : this.getAllPlayers()){
+                DMMain.getCrackShot().giveWeapon(p, "Revolver", 1);
+            }
+            sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
+            sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
+        }
+        super.showCountDown(levelTiming);
+
     }
 
     private void doIngameCheck() {
@@ -271,15 +276,16 @@ public class Deathmatch extends TeamMission {
         return MissionEventHandler.NEXT_TRUE;
     }
 
+    @Override
     public String getAuth() {
         return "Sansko1337";
     }
-    
+
     @Override
     public Material getIcon() {
         return Material.STONE_SWORD;
-    }   
-    
+    }
+
     private void sendMessage(boolean outlaws, String message) {
         if (outlaws) {
             for (Player pl : this.teamA) {
