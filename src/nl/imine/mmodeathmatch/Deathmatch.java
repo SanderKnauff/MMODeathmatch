@@ -231,9 +231,6 @@ public class Deathmatch extends TeamMission {
             this.setStage(null, null, null, MissionStage.STAGE1);
             this.status = MissionStatus.IN_GAME;
             levelTiming = 0;
-            for(Player p : this.getAllPlayers()){
-                DMMain.getCrackShot().giveWeapon(p, "Revolver", 1);
-            }
             sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
             sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
         }

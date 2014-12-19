@@ -5,7 +5,6 @@
  */
 package nl.imine.mmodeathmatch;
 
-import com.shampaggon.crackshot.CSUtility;
 import nl.makertim.MMOmain.lib.MMOOutlaws;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,12 +16,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class DMMain extends JavaPlugin{
 
     private static Plugin plugin;
-    private static CSUtility crackShot;
     
     @Override
     public void onEnable(){
         plugin = this;
-        crackShot = new CSUtility();
         MMOOutlaws.getInstance().addMission(Deathmatch.class);
     }
     
@@ -33,10 +30,6 @@ public class DMMain extends JavaPlugin{
     
     public static Plugin getInstance(){
         return plugin;
-    }
-    
-    public static CSUtility getCrackShot(){
-        return crackShot;
     }
     
 }
