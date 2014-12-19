@@ -1,4 +1,4 @@
 name: MMO_Deathmatch
 main: nl.imine.mmodeathmatch.DMMain
 version: V0.0.1a
-depend: IMINE_MMO_main
+depend: [IMINE_MMO_main]
