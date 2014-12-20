@@ -252,42 +252,42 @@ public class Deathmatch extends TeamMission {
                     } else {
                         c1 = p;
                     }
-                    outlaw.setCompassTarget(p.getLocation());
+                    outlaw.setCompassTarget(c1.getLocation());
                 }
-                for (Player sheriff : teamB) {
-                    sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
-                    Player c2 = null;
-                    for (Player p : teamA) {
-                        if (c2 != null) {
-                            if (p.getLocation().distanceSquared(outlaw.getLocation()) < c2.getLocation().distanceSquared(outlaw.getLocation())) {
-                                c2 = p;
-                            }
-                        } else {
+            }
+            for (Player sheriff : teamB) {
+                sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
+                Player c2 = null;
+                for (Player p : teamA) {
+                    if (c2 != null) {
+                        if (p.getLocation().distanceSquared(sheriff.getLocation()) < c2.getLocation().distanceSquared(sheriff.getLocation())) {
                             c2 = p;
                         }
-                        outlaw.setCompassTarget(c2.getLocation());
-                    }
-                }
-                if (secondRemain-- <= -1) {
-                    if (outlawDeaths < sheriffDeaths) {
-                        for (Player p : teamA) {
-                            this.reward(p, 1024);
-                        }
-                        sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
-                        sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
-                    } else if (sheriffDeaths < outlawDeaths) {
-                        for (Player p : teamB) {
-                            this.reward(p, 1024);
-                        }
-                        sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
-                        sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
                     } else {
-                        sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                        c2 = p;
                     }
-                    stop();
+                    sheriff.setCompassTarget(c2.getLocation());
                 }
-                cooldown = false;
             }
+            if (secondRemain-- <= -1) {
+                if (outlawDeaths < sheriffDeaths) {
+                    for (Player p : teamA) {
+                        this.reward(p, 1024);
+                    }
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
+                } else if (sheriffDeaths < outlawDeaths) {
+                    for (Player p : teamB) {
+                        this.reward(p, 1024);
+                    }
+                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+                } else {
+                    sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                }
+                stop();
+            }
+            cooldown = false;
         }
     }
 
