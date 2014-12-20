@@ -5,6 +5,8 @@
  */
 package nl.imine.mmodeathmatch;
 
+import java.util.ArrayList;
+import java.util.List;
 import nl.imine.mmodeathmatch.util.Lang;
 import nl.makertim.MMOmain.PlayerStats;
 import nl.makertim.MMOmain.Refrence;
@@ -23,7 +25,6 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
@@ -242,29 +243,51 @@ public class Deathmatch extends TeamMission {
         if (this.getStage().equals(MissionStage.STAGE1)) {
             for (Player outlaw : teamA) {
                 outlaw.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Look there! A sheriff!"}, null));
-            }
-            for (Player sheriff : teamB) {
-                sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
-            }
-            if (secondRemain-- <= -1) {
-                if (outlawDeaths < sheriffDeaths) {
-                    for (Player p : teamA) {
-                        this.reward(p, 1024);
+                Player c1 = null;
+                for (Player p : teamB) {
+                    if (c1 != null) {
+                        if (p.getLocation().distanceSquared(outlaw.getLocation()) < c1.getLocation().distanceSquared(outlaw.getLocation())) {
+                            c1 = p;
+                        }
+                    } else {
+                        c1 = p;
                     }
-                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
-                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
-                } else if (sheriffDeaths < outlawDeaths) {
-                    for (Player p : teamB) {
-                        this.reward(p, 1024);
-                    }
-                    sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
-                    sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
-                } else {
-                    sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                    outlaw.setCompassTarget(p.getLocation());
                 }
-                stop();
+                for (Player sheriff : teamB) {
+                    sheriff.getInventory().setItem(8, Refrence.customIS(Material.COMPASS, 1, "Objective location", new String[]{"Heads up! Crooks that way!"}, null));
+                    Player c2 = null;
+                    for (Player p : teamA) {
+                        if (c2 != null) {
+                            if (p.getLocation().distanceSquared(outlaw.getLocation()) < c2.getLocation().distanceSquared(outlaw.getLocation())) {
+                                c2 = p;
+                            }
+                        } else {
+                            c2 = p;
+                        }
+                        outlaw.setCompassTarget(c2.getLocation());
+                    }
+                }
+                if (secondRemain-- <= -1) {
+                    if (outlawDeaths < sheriffDeaths) {
+                        for (Player p : teamA) {
+                            this.reward(p, 1024);
+                        }
+                        sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_WIN, Lang.ENDMESSAGE_OUTLAW_WIN);
+                        sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_SHERIFF_LOSE);
+                    } else if (sheriffDeaths < outlawDeaths) {
+                        for (Player p : teamB) {
+                            this.reward(p, 1024);
+                        }
+                        sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_WIN, Lang.ENDMESSAGE_SHERIFF_WIN);
+                        sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_FAIL, Lang.ENDMESSAGE_OUTLAW_LOSE);
+                    } else {
+                        sendTitle(MissionTeam.ALL, Lang.MISSION_DRAW, Lang.ENDMESSAGE_DRAW);
+                    }
+                    stop();
+                }
+                cooldown = false;
             }
-            cooldown = false;
         }
     }
 
