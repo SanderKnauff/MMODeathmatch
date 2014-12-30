@@ -205,7 +205,7 @@ public class Deathmatch extends TeamMission {
     }
 
     private void doLobbyCheck() {
-
+        super.showCountDown(levelTiming);
         //TP terug naar lobby
         for (Player outlaw : teamA) {
             if (!getLobbyLocation(PlayerStats.getPlayerStats(outlaw)).isInsideRange(outlaw.getLocation())) {
@@ -235,7 +235,6 @@ public class Deathmatch extends TeamMission {
             sendTitle(MissionTeam.SHERIFFS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_OUTLAWS);
             sendTitle(MissionTeam.OUTLAWS, Lang.MISSION_NAME.toUpperCase(), Lang.OBJECTIVE_KILL_SHERIFFS);
         }
-        super.showCountDown(levelTiming);
 
     }
 
